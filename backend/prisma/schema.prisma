@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  wallet    Wallet?
+
+  @@map("users")
+}
+
+model Wallet {
+  id        String       @id @default(uuid())
+  userId    String       @unique @map("user_id")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now()) @map("created_at")
+  entries   Entry[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id             String      @id @default(uuid())
+  idempotencyKey String?     @unique @map("idempotency_key")
+  amountInCents  BigInt      @map("amount_in_cents")
+  description    String?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  entries        Entry[]
+
+  @@map("transactions")
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+model Entry {
+  id            String      @id @default(uuid())
+  walletId      String      @map("wallet_id")
+  wallet        Wallet      @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  transactionId String      @map("transaction_id")
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  type          EntryType
+  amountInCents BigInt      @map("amount_in_cents")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  @@map("entries")
+}
